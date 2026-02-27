@@ -7,18 +7,25 @@ import {
   Patch,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  create(@Body() body: CreatePostDto) {
-    return this.postsService.create(body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'admin')
+  create(@Body() body: CreatePostDto, @CurrentUser() user: { userId: number }) {
+    return this.postsService.create(body, user.userId);
   }
 
   @Get()
@@ -35,12 +42,23 @@ export class PostsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdatePostDto) {
-    return this.postsService.update(+id, body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'admin')
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdatePostDto,
+    @CurrentUser() user: { userId: number; role: string },
+  ) {
+    return this.postsService.update(+id, body, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postsService.remove(+id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'admin')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: { userId: number; role: string },
+  ) {
+    return this.postsService.remove(+id, user);
   }
 }
