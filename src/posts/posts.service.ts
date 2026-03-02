@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { Category } from '../categories/entities/category.entity';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -14,6 +14,10 @@ import { User } from '../users/entities/user.entity';
 type PostFilters = {
   published?: string;
   categoryId?: string;
+  search?: string;
+  authorId?: string;
+  sortBy?: string;
+  sortOrder?: string;
 };
 
 @Injectable()
@@ -53,23 +57,53 @@ export class PostsService {
   }
 
   async findAll(query: PostFilters) {
-    const { published, categoryId } = query;
+    const { published, categoryId, search, authorId, sortBy, sortOrder } = query;
 
-    const where: FindOptionsWhere<Post> = {};
+    const qb = this.postRepo
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.category', 'category')
+      .leftJoinAndSelect('post.author', 'author');
 
     if (published !== undefined) {
-      where.published = published === 'true';
+      qb.andWhere('post.published = :published', {
+        published: published === 'true',
+      });
     }
 
     if (categoryId !== undefined) {
       const parsedCategoryId = Number(categoryId);
 
       if (!Number.isNaN(parsedCategoryId)) {
-        where.category = { id: parsedCategoryId };
+        qb.andWhere('category.id = :categoryId', {
+          categoryId: parsedCategoryId,
+        });
       }
     }
 
-    return this.postRepo.find({ where });
+    if (authorId !== undefined) {
+      const parsedAuthorId = Number(authorId);
+
+      if (!Number.isNaN(parsedAuthorId)) {
+        qb.andWhere('author.id = :authorId', { authorId: parsedAuthorId });
+      }
+    }
+
+    if (search) {
+      qb.andWhere('(post.title LIKE :search OR post.content LIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    const sortableFields: Record<string, string> = {
+      createdAt: 'post.createdAt',
+      title: 'post.title',
+    };
+
+    const sortField = sortableFields[sortBy ?? 'createdAt'] ?? 'post.createdAt';
+    const normalizedSortOrder = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    qb.orderBy(sortField, normalizedSortOrder);
+
+    return qb.getMany();
   }
 
   async findOne(id: number) {

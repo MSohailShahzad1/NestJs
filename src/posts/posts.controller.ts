@@ -32,8 +32,19 @@ export class PostsController {
   findAll(
     @Query('published') published?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
+    @Query('authorId') authorId?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
-    return this.postsService.findAll({ published, categoryId });
+    return this.postsService.findAll({
+      published,
+      categoryId,
+      search,
+      authorId,
+      sortBy,
+      sortOrder,
+    });
   }
 
   @Get(':id')
