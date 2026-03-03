@@ -25,6 +25,12 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Local Development Notes
+
+- Copy `.env.example` to `.env` and update the values for your local machine.
+- Start PostgreSQL before running the API.
+- Use `npm run start:dev` for local development with watch mode.
+
 ## Project setup
 
 ```bash
@@ -96,3 +102,4 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
